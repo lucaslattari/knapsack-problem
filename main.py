@@ -58,7 +58,7 @@ def main():
         print("Solução:", bestValue, bestTuple)
     elif args.algorithm == "recursive":
         start = time.time()
-        bestValue = recursive(listOfValues, listOfWeights, capacity, args.totalItems)
+        bestValue = computeKnapsackProblemRecursiveMethod(listOfValues, listOfWeights, capacity, args.totalItems)
         end = time.time()
         print("Tempo em segundos", end - start)
         print("Solução:", bestValue)
@@ -107,28 +107,25 @@ def computeKnapsackProblemRecursiveMethod(listOfValues, listOfWeights, capacity,
     if n == 0:
         return 0
     elif listOfWeights[n - 1] > capacity:
-        return recursive(listOfValues, listOfWeights, capacity, n - 1)
+        return computeKnapsackProblemRecursiveMethod(listOfValues, listOfWeights, capacity, n - 1)
     else:
         return max([
-            listOfValues[n - 1] + recursive(listOfValues, listOfWeights, capacity - listOfWeights[n - 1], n - 1), recursive(listOfValues, listOfWeights, capacity, n - 1)
+            listOfValues[n - 1] + computeKnapsackProblemRecursiveMethod(listOfValues, listOfWeights, capacity - listOfWeights[n - 1], n - 1), computeKnapsackProblemRecursiveMethod(listOfValues, listOfWeights, capacity, n - 1)
         ])
 
-def computeKnapsackProblemDynamicProgramming(listValor, listPeso, capacidadeMochila, n):
-    K = np.array([[0 for x in range(capacidadeMochila + 1)] for x in range(n + 1)])
-    print(K.shape)
-    input()
+def computeKnapsackProblemDynamicProgramming(listOfValues, listOfWeights, maxCapacity, n):
+    K = np.array([[0 for x in range(maxCapacity + 1)] for x in range(n + 1)])
 
-    # Build table K[][] in bottom up manner
-    for i in range(n + 1):
-        for w in range(W + 1):
-            if i == 0 or w == 0:
-                K[i][w] = 0
-            elif wt[i-1] <= w:
-                K[i][w] = max(val[i-1] + K[i-1][w-wt[i-1]], K[i-1][w])
+    for it in range(n + 1):
+        for cap in range(maxCapacity + 1):
+            if it == 0 or cap == 0:
+                K[it][cap] = 0
+            elif listOfWeights[it - 1] <= cap:
+                K[it][cap] = max(listOfValues[it - 1] + K[it - 1][cap - listOfWeights[it - 1]], K[it - 1][cap])
             else:
-                K[i][w] = K[i-1][w]
+                K[it][cap] = K[it - 1][cap]
 
-    return K[n][W]
+    return K[n][maxCapacity]
 
 #python main.py dumb 24 -w [382745,799601,909247,729069,467902,44328,34610,698150,823460,903959,853665,551830,610856,670702,488960,951111,323046,446298,931161,31385,496951,264724,224916,169684] -v [825594,1677009,1676628,1523970,943972,97426,69666,1296457,1679693,1902996,1844992,1049289,1252836,1319836,953277,2067538,675367,853655,1826027,65731,901489,577243,466257,369261] -W 6404180
 #python main.py recursive 24 -w [382745,799601,909247,729069,467902,44328,34610,698150,823460,903959,853665,551830,610856,670702,488960,951111,323046,446298,931161,31385,496951,264724,224916,169684] -v [825594,1677009,1676628,1523970,943972,97426,69666,1296457,1679693,1902996,1844992,1049289,1252836,1319836,953277,2067538,675367,853655,1826027,65731,901489,577243,466257,369261] -W 6404180
