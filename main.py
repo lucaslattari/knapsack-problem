@@ -16,6 +16,13 @@ def parse_args():
     parser.add_argument('-W', action = 'store', dest = 'W', type = int, required = False,
                         help = 'Capacidade da mochila')
 
+    parser.add_argument('-sp', action = 'store', dest = 'sizeOfPopulation', type = int, required = False,
+                        help = 'Tamanho da população (para algoritmo genético)')
+    parser.add_argument('-ng', action = 'store', dest = 'numGenerations', type = int, required = False,
+                        help = 'Número de gerações (para algoritmo genético)')
+    parser.add_argument('-mr', action = 'store', dest = 'mutationRate', type = float, required = False,
+                        help = 'Taxa de Mutação (para algoritmo genético)')
+
     return parser.parse_args()
 
 def main():
@@ -70,7 +77,7 @@ def main():
         print("Solução:", bestValue)
     elif args.algorithm == "genetic":
         start = time.time()
-        bestValue = computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, capacity, args.totalItems)
+        bestValue = computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, capacity, args.totalItems, args.sizeOfPopulation, args.numGenerations, args.mutationRate, args.seed)
         end = time.time()
         print("Tempo em segundos", end - start)
         print("Solução:", bestValue)
@@ -91,19 +98,15 @@ def computeKnapsackProblemDumbMethod(listOfValues, listOfWeights, capacity):
     bestValue = -1
     bestTuple = None
     for tuple in allCombinations:
-        #print(tuple, len(tuple), type(tuple))
-
         #soma pesos e valor
         sumWeights = 0
         sumValues = 0
         for elementID in tuple:
             sumWeights += listOfWeights[elementID]
             sumValues += listOfValues[elementID]
-            #print(elementID, type(elementID))
 
         if sumWeights <= capacity:
             if sumValues > bestValue:
-                #print(sumValues, sumWeights, tuple)
                 bestValue = sumValues
                 bestTuple = tuple
 
@@ -137,11 +140,11 @@ import matplotlib.pyplot as plt
 def computeFitnessOfPopulation(listOfValues, listOfWeights, listOfPopulation, maxCapacity, numberOfItems, sizeOfPopulation):
     fitness = []
     for i in range(sizeOfPopulation):
-        valueOfPopulationI = np.sum(listOfPopulation[i] * listOfValues)
-        weightOfPopulationI = np.sum(listOfPopulation[i] * listOfWeights)
+        valueOfSolutionI = np.sum(listOfPopulation[i] * listOfValues)
+        weightOfSolutionI = np.sum(listOfPopulation[i] * listOfWeights)
 
-        if weightOfPopulationI <= maxCapacity:
-            fitness = np.append(fitness, valueOfPopulationI)
+        if weightOfSolutionI <= maxCapacity:
+            fitness = np.append(fitness, valueOfSolutionI)
         else:
             fitness = np.append(fitness, 0)
 
@@ -150,60 +153,43 @@ def computeFitnessOfPopulation(listOfValues, listOfWeights, listOfPopulation, ma
 def getFittestIndividuals(fitnessForEachPopulation, numberOfParents, listOfPopulation):
     fitnessForEachPopulationSorted = list(fitnessForEachPopulation)
     fitnessForEachPopulationSorted.sort(reverse = True)
-    '''
-    print(fitnessForEachPopulation)
-    print("\n")
-    print(fitnessForEachPopulationSorted)
-    print("\n")
-    print(listOfPopulation)
-    print("\n")
-    '''
 
     fittestIndividualsIndices = []
     countParents = 0
     while 1:
-        auxCandidateIndividuals = np.where(fitnessForEachPopulationSorted[countParents] == fitnessForEachPopulation)
-        for eachTuple in auxCandidateIndividuals:
-            for eachCandidate in eachTuple:
-                fittestIndividualsIndices = np.append(fittestIndividualsIndices, eachCandidate)
-                countParents += 1
+        indexOfIndividualsWithThatFitness = np.where(fitnessForEachPopulationSorted[countParents] == fitnessForEachPopulation)
+        for eachFittestIndividualIndex in indexOfIndividualsWithThatFitness[0]:
+            fittestIndividualsIndices = np.append(fittestIndividualsIndices, eachFittestIndividualIndex)
+            countParents += 1
 
-                if numberOfParents == countParents:
-                    #print(fittestIndividualsIndices)
-                    #print("\n")
-                    fittestIndividuals = np.zeros((numberOfParents, listOfPopulation.shape[1]), dtype = int) #linha, coluna
-                    row = 0
-                    for eachIndividualIndex in fittestIndividualsIndices: #TODO: enfiar row nesse for
-                        fittestIndividuals[row, :] = listOfPopulation[int(eachIndividualIndex)]
-                        row += 1
-                    return fittestIndividuals
+            if numberOfParents == countParents:
+                parents = np.zeros((numberOfParents, listOfPopulation.shape[1]), dtype = int) #linha, coluna
+                row = 0
+                for eachIndividualIndex in fittestIndividualsIndices:
+                    parents[row, :] = listOfPopulation[int(eachIndividualIndex)]
+                    row += 1
 
-def generateChildByOnePointCrossover(fathers, numberOfChildren):
-    children = np.zeros((numberOfChildren, fathers.shape[1]), dtype = int) #linha, coluna
+                #print(parents)
+                #print(fitnessForEachPopulationSorted)
+                #input()
 
-    selectedFathers = random.sample(list(fathers), numberOfChildren)
+                return parents
+
+def generateChildByOnePointCrossover(parents, numberOfChildren):
+    children = np.zeros((numberOfChildren, parents.shape[1]), dtype = int) #linha, coluna
+
+    selectedParents = random.sample(list(parents), numberOfChildren)
     for i in range(0, int(children.shape[0]), 2):
-        crossoverPoint = random.randint(1, fathers.shape[1] - 1)
+        crossoverPoint = random.randint(1, parents.shape[1] - 1)
 
-        randomFather1 = selectedFathers[i]
-        randomFather2 = selectedFathers[i + 1]
+        randomParent1 = selectedParents[i]
+        randomParent2 = selectedParents[i + 1]
 
-        children[i, 0:crossoverPoint] = randomFather1[:crossoverPoint]
-        children[i, crossoverPoint:] = randomFather2[crossoverPoint:]
+        children[i, 0:crossoverPoint] = randomParent1[:crossoverPoint]
+        children[i, crossoverPoint:] = randomParent2[crossoverPoint:]
 
-        children[i + 1, 0:crossoverPoint] = randomFather2[:crossoverPoint]
-        children[i + 1, crossoverPoint:] = randomFather1[crossoverPoint:]
-        '''
-        print(randomFather1)
-        print(randomFather2)
-        print(crossoverPoint)
-        #print(randomFather1[:crossoverPoint])
-        #print(randomFather2[crossoverPoint:])
-        print(children[i])
-        print(children[i + 1])
-
-        input()
-        '''
+        children[i + 1, 0:crossoverPoint] = randomParent2[:crossoverPoint]
+        children[i + 1, crossoverPoint:] = randomParent1[crossoverPoint:]
 
     return children
 
@@ -217,14 +203,28 @@ def mutateIndividuals(individuals, mutationRate):
             else:
                 individual[sortedGene] = 0
 
-def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapacity, n):
+def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapacity, n, sizeOfPopulation, numGenerations, mutationRate, seed):
     #https://medium.com/koderunners/genetic-algorithm-part-3-knapsack-problem-b59035ddd1d6
 
-    sizeOfPopulation = 32
-    numGenerations = 100
-    listOfPopulation = np.random.randint(2, size=(sizeOfPopulation, n))
-    fitnessHistory = []
+    if sizeOfPopulation is None:
+        print("ERRO: Faltou informar o tamanho da população no algoritmo genético.")
+        exit()
 
+    if numGenerations is None:
+        print("ERRO: Faltou informar o número de gerações no algoritmo genético.")
+        exit()
+
+    if mutationRate is None:
+        print("ERRO: Faltou informar a taxa de mutação no algoritmo genético.")
+        exit()
+
+    if seed is not None:
+        random.seed(seed)
+        np.random.seed(seed)
+
+    listOfPopulation = np.random.randint(2, size=(sizeOfPopulation, n))
+
+    fitnessHistory = []
     for g in range(numGenerations):
         fitnessForPopulation = computeFitnessOfPopulation(listOfValues, listOfWeights, listOfPopulation, maxCapacity, n, sizeOfPopulation)
         fitnessHistory.append(fitnessForPopulation)
@@ -232,22 +232,10 @@ def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapac
         numberOfParents = int(sizeOfPopulation / 2)
         fittestIndividuals = getFittestIndividuals(fitnessForPopulation, numberOfParents, listOfPopulation)
         children = generateChildByOnePointCrossover(fittestIndividuals, numberOfParents)
-        mutationRate = 0.6
         mutateIndividuals(children, mutationRate)
-
-        '''
-        print("Gen", g)
-        print(listOfPopulation)
-        print(fitnessForPopulation)
-        input()
-        '''
 
         listOfPopulation[0 : fittestIndividuals.shape[0], :] = fittestIndividuals
         listOfPopulation[fittestIndividuals.shape[0] :, :] = children
-
-        #print(listOfPopulation)
-        #print(computeFitnessOfPopulation(listOfValues, listOfWeights, listOfPopulation, maxCapacity, n, sizeOfPopulation))
-        #input()
 
     finalFitness = computeFitnessOfPopulation(listOfValues, listOfWeights, listOfPopulation, maxCapacity, n, sizeOfPopulation)
 
@@ -269,11 +257,6 @@ def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapac
     plt.show()
 
     return max(finalFitness)
-
-    #fitness_history_max = [np.max(fitness) for fitness in fitness_history]
-
-    #print(listOfPopulation)
-    #print(fitnessForEachPopulation)
 
 #python main.py dumb 24 -w [382745,799601,909247,729069,467902,44328,34610,698150,823460,903959,853665,551830,610856,670702,488960,951111,323046,446298,931161,31385,496951,264724,224916,169684] -v [825594,1677009,1676628,1523970,943972,97426,69666,1296457,1679693,1902996,1844992,1049289,1252836,1319836,953277,2067538,675367,853655,1826027,65731,901489,577243,466257,369261] -W 6404180
 #python main.py recursive 24 -w [382745,799601,909247,729069,467902,44328,34610,698150,823460,903959,853665,551830,610856,670702,488960,951111,323046,446298,931161,31385,496951,264724,224916,169684] -v [825594,1677009,1676628,1523970,943972,97426,69666,1296457,1679693,1902996,1844992,1049289,1252836,1319836,953277,2067538,675367,853655,1826027,65731,901489,577243,466257,369261] -W 6404180
