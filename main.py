@@ -150,28 +150,24 @@ def computeFitnessOfPopulation(listOfValues, listOfWeights, listOfPopulation, ma
 
     return fitness
 
-def getFittestIndividuals(fitnessForEachPopulation, numberOfParents, listOfPopulation):
-    fitnessForEachPopulationSorted = list(fitnessForEachPopulation)
-    fitnessForEachPopulationSorted.sort(reverse = True)
+def getFittestIndividuals(fitnessOfPopulation, numberOfParents, listOfPopulation):
+    fitnessOfIndividualsSorted = list(fitnessOfPopulation)
+    fitnessOfIndividualsSorted.sort(reverse = True)
+
+    #[120, 100, 60, 0]
 
     fittestIndividualsIndices = []
-    countParents = 0
     while 1:
-        indexOfIndividualsWithThatFitness = np.where(fitnessForEachPopulationSorted[countParents] == fitnessForEachPopulation)
+        indexOfIndividualsWithThatFitness = np.where(fitnessOfIndividualsSorted[len(fittestIndividualsIndices)] == fitnessOfPopulation)
         for eachFittestIndividualIndex in indexOfIndividualsWithThatFitness[0]:
             fittestIndividualsIndices = np.append(fittestIndividualsIndices, eachFittestIndividualIndex)
-            countParents += 1
 
-            if numberOfParents == countParents:
+            if numberOfParents == len(fittestIndividualsIndices):
                 parents = np.zeros((numberOfParents, listOfPopulation.shape[1]), dtype = int) #linha, coluna
                 row = 0
                 for eachIndividualIndex in fittestIndividualsIndices:
                     parents[row, :] = listOfPopulation[int(eachIndividualIndex)]
                     row += 1
-
-                #print(parents)
-                #print(fitnessForEachPopulationSorted)
-                #input()
 
                 return parents
 
@@ -179,7 +175,7 @@ def generateChildByOnePointCrossover(parents, numberOfChildren):
     children = np.zeros((numberOfChildren, parents.shape[1]), dtype = int) #linha, coluna
 
     selectedParents = random.sample(list(parents), numberOfChildren)
-    for i in range(0, int(children.shape[0]), 2):
+    for i in range(0, numberOfChildren, 2):
         crossoverPoint = random.randint(1, parents.shape[1] - 1)
 
         randomParent1 = selectedParents[i]
@@ -230,12 +226,12 @@ def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapac
         fitnessHistory.append(fitnessForPopulation)
 
         numberOfParents = int(sizeOfPopulation / 2)
-        fittestIndividuals = getFittestIndividuals(fitnessForPopulation, numberOfParents, listOfPopulation)
-        children = generateChildByOnePointCrossover(fittestIndividuals, numberOfParents)
+        parents = getFittestIndividuals(fitnessForPopulation, numberOfParents, listOfPopulation)
+        children = generateChildByOnePointCrossover(parents, numberOfParents)
         mutateIndividuals(children, mutationRate)
 
-        listOfPopulation[0 : fittestIndividuals.shape[0], :] = fittestIndividuals
-        listOfPopulation[fittestIndividuals.shape[0] :, :] = children
+        listOfPopulation[0 : parents.shape[0], :] = parents
+        listOfPopulation[parents.shape[0] :, :] = children
 
     finalFitness = computeFitnessOfPopulation(listOfValues, listOfWeights, listOfPopulation, maxCapacity, n, sizeOfPopulation)
 
@@ -248,13 +244,15 @@ def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapac
     print(fitnessHistoryMean)
     print(fitnessHistoryMax)
 
-    plt.plot(list(range(numGenerations)), fitnessHistoryMean, label = 'Mean Fitness')
-    plt.plot(list(range(numGenerations)), fitnessHistoryMax, label = 'Max Fitness')
+    '''
+    plt.plot(list(range(numGenerations)), fitnessHistoryMean, label = 'Fitness Médio')
+    plt.plot(list(range(numGenerations)), fitnessHistoryMax, label = 'Fitness Máximo')
     plt.legend()
-    plt.title('Fitness through the generations')
-    plt.xlabel('Generations')
+    plt.title('Fitness ao longo das gerações')
+    plt.xlabel('Gerações')
     plt.ylabel('Fitness')
     plt.show()
+    '''
 
     return max(finalFitness)
 
