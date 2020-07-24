@@ -244,7 +244,6 @@ def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapac
     print(fitnessHistoryMean)
     print(fitnessHistoryMax)
 
-    '''
     plt.plot(list(range(numGenerations)), fitnessHistoryMean, label = 'Fitness Médio')
     plt.plot(list(range(numGenerations)), fitnessHistoryMax, label = 'Fitness Máximo')
     plt.legend()
@@ -252,7 +251,6 @@ def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapac
     plt.xlabel('Gerações')
     plt.ylabel('Fitness')
     plt.show()
-    '''
 
     return max(finalFitness)
 
@@ -265,5 +263,6 @@ def computeKnapsackProblemGeneticAlgorithm(listOfValues, listOfWeights, maxCapac
 #python main.py dumb 3 -v [60,100,120] -w [10,20,30] -W 50
 #python main.py recursive 3 -v [60,100,120] -w [10,20,30] -W 50
 #python main.py dynamic 3 -v [60,100,120] -w [1,2,3] -W 5
+#python main.py genetic 3 -v [60,100,120] -w [1,2,3] -W 5 -sp 4 -ng 6 -mr 0.6
 if __name__ == "__main__":
     main()
